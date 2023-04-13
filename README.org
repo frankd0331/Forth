@@ -1,0 +1,5 @@
+#+STARTUP: indent overview
+
+* Todo [1/2]
+- [X] Get Todo list working
+- [ ] Add more todo's

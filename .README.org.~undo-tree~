@@ -1,0 +1,13 @@
+(undo-tree-save-format-version . 1)
+"322115b5a216ea39ed8d017aae3952bd94663262"
+[nil nil nil nil (25655 61942 556231 0) 0 nil]
+([nil nil ((nil rear-nonsticky nil 1 . 2) (#("
+" 0 1 (fontified nil)) . -28) (1 . 29) (t 25655 61846 152605 597000)) nil (25655 61942 556229 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t rear-nonsticky t)) . 1) (undo-tree-id8 . -1) (undo-tree-id9 . -1) (undo-tree-id10 . -1)) nil (25655 61942 556228 0) 0 nil])
+([nil nil ((#("[0/1]" 0 5 (fontified nil face (org-checkbox-statistics-todo org-level-1))) . 41) (36 . 41) (nil fontified t 44 . 47) (nil face (org-checkbox) 44 . 47) (#("[ ]" 0 3 (fontified t face (org-checkbox))) . 44) (47 . 50) 69 (#("[1/1]" 0 5 (fontified nil face (org-checkbox-statistics-done org-level-1))) . 41) (36 . 41) (nil fontified t 44 . 47) (nil face (org-checkbox) 44 . 47) (#("[X]" 0 3 (fontified t face (org-checkbox))) . 44) (47 . 50) 69 (#("[/]" 0 3 (fontified nil face (org-checkbox-statistics-todo org-level-1))) . 41) (36 . 41) (nil fontified t 42 . 45) (nil face (org-checkbox) 42 . 45) (#("[ ]" 0 3 (fontified t face (org-checkbox))) . 42) (45 . 48) 67 (66 . 67) (45 . 66) (40 . 45) (39 . 40) (32 . 39) (29 . 32) (28 . 29) (27 . 28) 1) nil (25655 61942 556224 0) 0 nil])
+([nil nil ((#("[1/1]" 0 5 (fontified nil face (org-checkbox-statistics-done org-level-1))) . 41) (36 . 41) (42 . 76) (#("- [ ] 
+- [X] Get Todo list working" 0 6 (fontified nil) 6 7 (fontified nil) 7 9 (fontified nil) 9 12 (fontified nil face (org-checkbox)) 12 34 (fontified nil)) . 42) (undo-tree-id0 . -33) (undo-tree-id1 . -34) (undo-tree-id2 . -33) (undo-tree-id3 . -33) (undo-tree-id4 . -33) (undo-tree-id5 . -33) (undo-tree-id6 . -33) (undo-tree-id7 . -7) (42 . 49) 68) nil (25655 61942 556218 0) 0 nil])
+([nil nil ((76 . 91)) nil (25655 61942 556187 0) 0 nil])
+([nil current ((91 . 92) 89) nil (25655 61942 556183 0) 0 nil])
+nil
