@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "mL3BX3vFhxAmwHfp9eHES1Xj6aqMnCp+ezpVdJcq5ZRlFq1aGaTrd0EYqur5/foXhcv44khHYXY2FXwfxbWcJA==",
+  "success": true,
+  "projectFilePath": "/Users/frankd/Projects/fsharp/Forth/Forth.fsproj",
+  "expectedPackageFiles": [
+    "/Users/frankd/.nuget/packages/fsharp.core/7.0.200/fsharp.core.7.0.200.nupkg.sha512"
+  ],
+  "logs": []
+}
