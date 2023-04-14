@@ -1,15 +1,24 @@
 ﻿open System.Text.RegularExpressions
 open System
-open System.Xml.Xsl
 
 type Word =
     | Number of int
     | Operator of string
+    | RelationalOperator of string
     | StartCompile
     | EndCompile
     | WordName of string
     | PrintCommand
     | PrintCompiledWords
+    | SeeCompiledWord
+    | If
+    | Else
+    | EndIf
+    | String of string
+    | PrintTopOfStack
+    | NewLine
+    | ForLoop
+    | EndForLoop
     
 type CompiledWord = (Word * Word list)
     
@@ -90,8 +99,8 @@ let binaryOperation (result: (int * int list) option) (operation: int -> int -> 
             Some(n :: stack)
 
 let tokenize input =
-    let regex = Regex("(\\s*[()\\[\\]{}'\`~,^@\\s]\\s*|;.*|[^\\s,()\\[\\]{}\"'`~@^;]+)")
-
+//    let regex = Regex("(\\s*[()\\[\\]{}'\`~,^@\\s]\\s*|;.*|[^\\s,()\\[\\]{}\"'`~@^;]+)")
+    let regex = Regex("(\\s*[()\\[\\]{}'\`~,^@\\s]\\s*|;.*|\"([^\"]*)\"|[^\\s,()\\[\\]{}\"'`~@^;]+)")
     regex.Matches(input)
     |> Seq.cast<Match>
     |> Seq.map (fun m -> m.Value.Trim())
@@ -129,11 +138,21 @@ let matchWord word =
     | "over"
     | "roll"
     | "pick" -> Operator word
+    | "=" | "<" | "<=" | ">" | ">=" -> RelationalOperator word
+    | "if" -> If
+    | "else" -> Else
+    | "endif" -> EndIf
     | ".s" -> PrintCommand
     | ".c" -> PrintCompiledWords
+    | "printindex" -> PrintTopOfStack
+    | "newline" -> NewLine
+    | "see" -> SeeCompiledWord
     | ":" -> StartCompile
     | ";" -> EndCompile
+    | "do" -> ForLoop
+    | "loop" -> EndForLoop
     | _ when Int32.TryParse(word, &num) -> Number(int word)
+    | _ when word[0] = '"' -> String word
     | _ -> WordName word
     
 let rec readTokens tokens =
@@ -154,15 +173,46 @@ let makeNewWord words =
     | newWord, xs -> compiledWords <- newWord::compiledWords
                      xs
                      
-let rec callWord name (l:CompiledWord list) =
+let rec callWordList name (l:CompiledWord list) =
     let n, w = List.head l
     let n =
         match n with
-        | WordName name -> name
+        | WordName wname -> wname
     if name = n then
         w
     else
-        callWord name (List.tail l)
+        callWordList name (List.tail l)
+        
+//let rec compileWordList wordList stack 
+        
+let rec printWordsOfString wordList =
+    match wordList with
+    | [] -> printf ""
+    | word::tail ->
+        match word with
+        | Operator n ->
+            printf $"{n} "
+            printWordsOfString tail
+        | WordName n ->
+            printf $"{n} "
+            printWordsOfString tail
+        | If ->
+            printf "if "
+            printWordsOfString tail
+        | Else ->
+            printf "else "
+            printWordsOfString tail
+        | EndIf ->
+            printf "endif "
+            printWordsOfString tail
+            
+let rec moveToElseOrEnd (l:Word list) =
+    match l with
+    | [] -> []
+    | Else::xs -> xs
+    | EndIf::xs -> xs
+    | _::xs -> moveToElseOrEnd xs            
+    
 
 let rec eval words stack =
     match words with
@@ -178,6 +228,15 @@ let rec eval words stack =
         | PrintCompiledWords ->
             printfn $"{compiledWords}"
             eval xs stack
+        | SeeCompiledWord ->
+            let wordName =
+                match (List.head xs) with
+                | WordName n -> n
+            let wordContent = callWordList wordName compiledWords
+            printf $": {wordName} "
+            printWordsOfString wordContent
+            printf "; "
+            eval [] stack
         | Number n -> eval xs (push n stack)
         | Operator op ->
             let newStack =
@@ -248,7 +307,7 @@ let rec eval words stack =
                             Some stack
                         else
                             Some (pick index stack)
-                 | "." ->
+                | "." ->
                     match pop stack with
                     | None -> None
                     | Some (p, stack) ->
@@ -258,8 +317,51 @@ let rec eval words stack =
             match newStack with
             | None -> eval xs stack
             | Some stack -> eval xs stack
+        | RelationalOperator op ->
+            let newStack =
+                match op with
+                | "=" ->
+                    match pop stack with
+                    | None -> None
+                    | Some (second, stack) ->
+                        match pop stack with
+                        | None -> None
+                        | Some (first, stack) ->
+                            if first = second then
+                                Some (1::stack)
+                            else
+                                Some (0::stack)
+                | "<" -> binaryOperation (pop stack) (fun a b -> if a < b then 1 else 0)
+                | "<=" -> binaryOperation (pop stack) (fun a b -> if a <= b then 1 else 0)
+                | ">" -> binaryOperation (pop stack) (fun a b -> if a > b then 1 else 0)
+                | ">=" -> binaryOperation (pop stack) (fun a b -> if a >= b then 1 else 0)
+                | _ -> failwith "not implemented"
+            match newStack with
+            | None -> eval xs stack
+            | Some stack -> eval xs stack
         | StartCompile -> eval (makeNewWord xs) stack
-        | WordName s -> eval ((callWord s compiledWords) @ xs) stack
+        | WordName s -> eval ((callWordList s compiledWords) @ xs) stack
+        | String s ->
+            printf $"{s} "
+            eval xs stack
+        | If ->
+            match pop stack with
+            | None -> eval xs stack //undefined?
+            | Some (result, stack) ->
+                if (result = 1) then
+                    eval xs stack
+                else
+                    eval (moveToElseOrEnd xs) stack
+        | Else -> eval (moveToElseOrEnd xs) stack
+        | EndIf -> eval xs stack
+        | NewLine ->
+            printfn ""
+            eval xs stack
+        | PrintTopOfStack ->
+            printf $"{List.head stack} "
+            eval xs stack
+            
+        
 
 [<EntryPoint>]
 let main argv =
