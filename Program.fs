@@ -10,19 +10,25 @@ type Word =
     | WordName of string
     | PrintCommand
     | PrintCompiledWords
+    | PrintVariables
     | SeeCompiledWord
     | If
     | Else
     | EndIf
     | String of string
-    | PrintTopOfStack
+    | PushIndex
     | NewLine
     | ForLoop
     | EndForLoop
+    | VariableName of string
+    | AssignVariable
+    | PushVariable
     
 type CompiledWord = (Word * Word list)
+type Variable = (Word *  int ref)
     
 let mutable compiledWords: CompiledWord list = []
+let mutable variables: Variable list = []
 
 let push n l = n :: l
 
@@ -111,6 +117,21 @@ let removeComments input =
     let regex = Regex("(\(.*?\))|#.*")
     regex.Replace(input, "")
 
+
+let rec inVariableList w l =
+    match l with
+    | [] -> false
+    | x::_ when (fst x) = w -> true
+    | _::xs -> inVariableList w xs
+    
+let stringInVariableList s =
+    let rec sivl l =
+        match l with
+        | [] -> false
+        | x::_ when (fst x) = s -> true
+        | _::xs -> sivl xs
+    sivl variables
+    
 let matchWord word =
     let mutable num = 0
     match word with
@@ -144,20 +165,28 @@ let matchWord word =
     | "endif" -> EndIf
     | ".s" -> PrintCommand
     | ".c" -> PrintCompiledWords
-    | "printindex" -> PrintTopOfStack
+    | ".v" -> PrintVariables
+    | "index" -> PushIndex
     | "newline" -> NewLine
     | "see" -> SeeCompiledWord
     | ":" -> StartCompile
     | ";" -> EndCompile
     | "do" -> ForLoop
     | "loop" -> EndForLoop
+    | "!" -> AssignVariable
+    | "@" -> PushVariable
     | _ when Int32.TryParse(word, &num) -> Number(int word)
     | _ when word[0] = '"' -> String word
-    | _ -> WordName word
+    | _ ->
+        if inVariableList (VariableName word) variables then
+            VariableName word
+        else
+            WordName word
     
 let rec readTokens tokens =
     match tokens with
     | [] -> []
+    | x ::n:: xs when x = "var" -> (VariableName n) :: readTokens xs
     | x :: xs -> matchWord x :: readTokens xs
 
 let read input = input |> removeComments |> tokenize |> readTokens
@@ -211,8 +240,24 @@ let rec moveToElseOrEnd (l:Word list) =
     | [] -> []
     | Else::xs -> xs
     | EndIf::xs -> xs
+    | EndForLoop::xs -> xs
     | _::xs -> moveToElseOrEnd xs            
     
+let assignVariableValue varname value =
+    let rec avv varlist =
+        match varlist with
+        | [] -> failwith "variable not found in list of variables"
+        | x::xs when (fst x) = varname -> snd x := value
+        | _::xs -> avv xs
+    avv variables
+    
+let getVariableValue word =
+    let rec gvv varlist =
+        match varlist with
+        | [] -> failwith "cannot get variable value, variable not found"
+        | x::xs when (fst x) = word -> (snd x)
+        | _::xs -> gvv xs
+    gvv variables
 
 let rec eval words stack =
     match words with
@@ -227,6 +272,9 @@ let rec eval words stack =
             eval xs stack
         | PrintCompiledWords ->
             printfn $"{compiledWords}"
+            eval xs stack
+        | PrintVariables ->
+            printfn $"{variables}"
             eval xs stack
         | SeeCompiledWord ->
             let wordName =
@@ -357,9 +405,36 @@ let rec eval words stack =
         | NewLine ->
             printfn ""
             eval xs stack
-        | PrintTopOfStack ->
-            printf $"{List.head stack} "
-            eval xs stack
+        | ForLoop ->
+            match pop stack with
+            | None -> eval xs stack
+            | Some(startingIndex, stack) ->
+                match pop stack with
+                | None -> eval xs stack
+                | Some(endingIndex, stack) ->
+                    let oldList = xs
+                    let rec loop i e wl nl ns=
+                        if i >= e then
+                            eval (nl@(moveToElseOrEnd xs)) ((List.rev ns)@stack)
+                        else
+                            match wl with
+                            | EndForLoop::_ -> loop (i+1) e oldList nl ns
+                            | PushIndex::xs -> loop i e xs nl (i::ns)
+                            | x::xs -> loop i e xs (x::nl) ns
+                    loop (int startingIndex) (int endingIndex) oldList [] []
+        | VariableName _ ->
+            if (inVariableList word variables) then
+                match xs with
+                | AssignVariable::xs ->
+                    match pop stack with
+                    | None -> eval xs stack
+                    | Some(value, stack) ->
+                        assignVariableValue word value
+                        eval xs stack
+                | PushVariable::xs -> eval xs ((getVariableValue word).Value::stack)
+            else
+                variables <- (word, ref(-1))::variables
+                eval xs stack
             
         
 
